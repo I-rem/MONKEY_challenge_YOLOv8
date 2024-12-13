@@ -45,8 +45,10 @@ WORKDIR /opt/app
 # Copy your program files
 COPY --chown=user:user main.py /opt/app/
 COPY --chown=user:user utils /opt/app/utils
-COPY --chown=user:user data /opt/app/data
+COPY --chown=user:user input /opt/app/input
+COPY --chown=user:user output /opt/app/output
 COPY --chown=user:user requirements.txt /opt/app/
+COPY --chown=user:user Patches /opt/app/Patches
 
 # Install Python dependencies from requirements.txt
 RUN /venv/bin/python3.8 -m pip install --no-cache-dir -r /opt/app/requirements.txt
