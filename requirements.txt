@@ -8,4 +8,3 @@ torch==1.10.1
 torchvision==0.11.2
 torchaudio==0.10.1
 ultralytics
-pathology-whole-slide-data @ git+https://github.com/DIAGNijmegen/pathology-whole-slide-data@main

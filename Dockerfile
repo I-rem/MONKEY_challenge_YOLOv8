@@ -53,15 +53,15 @@ COPY --chown=user:user requirements.txt /opt/app/
 # Install Python dependencies from requirements.txt
 RUN /venv/bin/python3.8 -m pip install --no-cache-dir -r /opt/app/requirements.txt
 
-# Install PyTorch and Detectron2
+# Install PyTorch
 RUN /venv/bin/python3.8 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
-RUN /venv/bin/python3.8 -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
+# RUN /venv/bin/python3.8 -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
 
 # Install YOLOv8
 RUN /venv/bin/python3.8 -m pip install ultralytics
 
 # Install Whole Slide Data library
-RUN /venv/bin/python3.8 -m pip install 'git+https://github.com/DIAGNijmegen/pathology-whole-slide-data@main'
+# RUN /venv/bin/python3.8 -m pip install 'git+https://github.com/DIAGNijmegen/pathology-whole-slide-data@main'
 
 # Ensure Python output is not buffered
 ENV PYTHONUNBUFFERED=1
