@@ -1,3 +1,13 @@
+import json
+import os
+import xml.etree.ElementTree as ET
+from shapely.geometry import Polygon, Point
+from ultralytics import YOLO
+import rasterio
+import numpy as np
+
+
+CLASSES = ["lymphocytes", "monocytes"]
 
 # Parse XML and extract ROIs and patch offsets
 def parse_xml(xml_file):

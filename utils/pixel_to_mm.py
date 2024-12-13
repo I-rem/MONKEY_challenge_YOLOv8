@@ -28,7 +28,7 @@ def convert_json_to_mm(json_file, output_file=None):
 #json_directory = "S:/GrandChallenge/Monkey/Dataset2/Yolo/runs/normalization_test/single_image_test/anots"
 json_directory = "."
 #output_directory = "S:/GrandChallenge/Monkey/Dataset2/Yolo/runs/normalization_test/single_image_test/anots_mm"  # Set this if you want to save to a different directory
-output_directory = "./outputs/results"  
+output_directory = "./output"  
 
 
 # Convert all JSON files in the directory
