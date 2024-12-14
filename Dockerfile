@@ -13,6 +13,7 @@ RUN : \
     && add-apt-repository -y ppa:deadsnakes \
     && apt-get install -y --no-install-recommends python3.8-venv python3.8-dev \
     && apt-get install -y libffi-dev libxml2-dev libjpeg-turbo8-dev zlib1g-dev \
+    && apt-get install -y libgl1 libglib2.0-0 mesa-utils \
     && apt-get clean \
     && :
 
