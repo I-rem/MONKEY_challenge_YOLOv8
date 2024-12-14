@@ -1,4 +1,8 @@
 import subprocess
+import os
+
+os.remove("input/images/tissue-mask/README.md")
+os.remove("input/images/kidney-transplant-biopsy-wsi-pas/README.md")
 
 python_path = "/venv/bin/python"
 
