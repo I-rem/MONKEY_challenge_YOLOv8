@@ -48,6 +48,7 @@ COPY --chown=user:user utils /opt/app/utils
 COPY --chown=user:user input /opt/app/input
 COPY --chown=user:user output /opt/app/output
 COPY --chown=user:user requirements.txt /opt/app/
+COPY --chown=user:user best.pt /opt/app/
 # COPY --chown=user:user Patches /opt/app/Patches
 
 # Install Python dependencies from requirements.txt
