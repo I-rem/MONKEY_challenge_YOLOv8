@@ -133,8 +133,8 @@ def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patc
     create_combined_xml(image_path, patch_data, xml_output_path)
 
 
-image_path = r'./input/images/.'
-image_name = "./input/images/" + os.listdir(image_path)[0]
+image_path = r'./input/images/kidney-transplant-biopsy-wsi-pas/.'
+image_name = "./input/images/kidney-transplant-biopsy-wsi-pas/" + os.listdir(image_path)[0]
 mask_path = r'./input/images/tissue-mask/.'
 mask_name = "./input/images/tissue-mask/" + os.listdir(mask_path)[0]
 # output_dir = "S:/GrandChallenge/Monkey/Dataset2/pure_patches/patches"
