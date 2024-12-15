@@ -9,3 +9,4 @@ torchvision==0.11.2
 torchaudio==0.10.1
 ultralytics
 imagecodecs
+pillow==9.5.0
