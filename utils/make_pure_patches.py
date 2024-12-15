@@ -1,16 +1,16 @@
+from tifffile import TiffFile, imwrite
 import os
 import numpy as np
-from tifffile import TiffFile, imwrite
 import xml.etree.ElementTree as ET
+
 
 def create_combined_xml(tiff_name, patch_data, output_file):
     """
-    Creates a single XML file containing information for all patches, their centers, and ROI polygons.
+    Creates a single XML file containing information for all patches and their centers.
     """
     root = ET.Element("ASAP_Annotations")
     annotations = ET.SubElement(root, "Annotations")
 
-    # Add all patches and their centers as annotations
     for patch_index, (patch_name, patch_coords) in enumerate(patch_data.items()):
         # Add Center annotation
         center_x = (patch_coords[0][0] + patch_coords[2][0]) / 2
@@ -40,67 +40,62 @@ def create_combined_xml(tiff_name, patch_data, output_file):
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Combined XML saved to {output_file}")
 
-def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patch_size=1024, chunk_size=2048):
+
+def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patch_size=1024):
     os.makedirs(output_dir, exist_ok=True)
 
+    # Open the TIFF files
     with TiffFile(image_path) as tif_image, TiffFile(mask_path) as tif_mask:
-        image_pages = tif_image.pages
-        mask_pages = tif_mask.pages
+        # Get the TIFF pages for memory-efficient access
+        image_page = tif_image.pages[0]
+        mask_page = tif_mask.pages[0]
+
+        image_shape = image_page.shape
+        mask_shape = mask_page.shape
+
+        print(f"Processing {image_path} with {mask_path}")
+        print(f"Image shape: {image_shape}, Mask shape: {mask_shape}")
 
         patch_index = 0
         patch_data = {}
 
-        for page_idx, (image_page, mask_page) in enumerate(zip(image_pages, mask_pages)):
-            print(f"Processing page {page_idx + 1}/{len(image_pages)}")
+        # Iterate over the mask in chunks to extract patches
+        for y in range(0, mask_shape[0], patch_size):
+            for x in range(0, mask_shape[1], patch_size):
+                # Extract the patch from the mask
+                mask_patch = mask_page.asarray()[y:y + patch_size, x:x + patch_size]
+                if np.any(mask_patch):  # Process only non-empty patches
+                    # Extract the corresponding image patch
+                    image_patch = image_page.asarray()[y:y + patch_size, x:x + patch_size]
 
-            image_shape = image_page.shape
+                    # Save the patch
+                    patch_name = f"{os.path.splitext(os.path.basename(image_path))[0][0:10]}_patch_{patch_index}"
+                    patch_output_path = os.path.join(output_dir, f"{patch_name}.png")
+                    imwrite(patch_output_path, image_patch)
 
-            for y in range(0, image_shape[0], chunk_size):
-                for x in range(0, image_shape[1], chunk_size):
-                    # Read a chunk of the image and mask
-                    image_chunk = image_page.asarray()[y:y+chunk_size, x:x+chunk_size]
-                    mask_chunk = mask_page.asarray()[y:y+chunk_size, x:x+chunk_size]
+                    # Store patch data for XML
+                    patch_coords = [
+                        (x, y),
+                        (x + patch_size, y),
+                        (x + patch_size, y + patch_size),
+                        (x, y + patch_size),
+                    ]
+                    patch_data[patch_name] = patch_coords
 
-                    if np.any(mask_chunk):  # Process only chunks with non-zero mask values
-                        for yy in range(0, image_chunk.shape[0], patch_size):
-                            for xx in range(0, image_chunk.shape[1], patch_size):
-                                # Extract smaller patches from the chunk
-                                patch_mask = mask_chunk[yy:yy+patch_size, xx:xx+patch_size]
-                                patch_image = image_chunk[yy:yy+patch_size, xx:xx+patch_size]
+                    patch_index += 1
 
-                                if np.any(patch_mask):
-                                    # Save the patch
-                                    patch_name = f"{os.path.splitext(os.path.basename(image_path))[0]}_patch_{patch_index}"
-                                    patch_output_path = os.path.join(output_dir, f"{patch_name}.png")
-
-                                    try:
-                                        imwrite(patch_output_path, patch_image)
-                                        print(f"Saved patch: {patch_output_path}")
-                                    except Exception as e:
-                                        print(f"Failed to save patch: {patch_output_path}, error: {e}")
-                                        continue
-
-                                    # Store patch data for XML
-                                    global_x = x + xx
-                                    global_y = y + yy
-                                    patch_coords = [
-                                        (global_x, global_y),
-                                        (global_x + patch_size, global_y),
-                                        (global_x + patch_size, global_y + patch_size),
-                                        (global_x, global_y + patch_size),
-                                    ]
-                                    patch_data[patch_name] = patch_coords
-
-                                    patch_index += 1
-
-        # Create a single combined XML for this TIFF
+        # Save combined XML
         xml_output_path = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_path))[0]}_annotations.xml")
         create_combined_xml(image_path, patch_data, xml_output_path)
 
+
+
 # Example usage
-image_path = r'/input/images/kidney-transplant-biopsy-wsi-pas/sample_image.tif'
-mask_path = r'/input/images/tissue-mask/sample_mask.tif'
+image_path = r'./input/images/kidney-transplant-biopsy-wsi-pas/.'
+image_name = "./input/images/kidney-transplant-biopsy-wsi-pas/" + os.listdir(image_path)[0]
+mask_path = r'./input/images/tissue-mask/.'
+mask_name = "./input/images/tissue-mask/" + os.listdir(mask_path)[0]
 output_dir = "./Patches"
 
 # Generate patches
-generate_patches_from_mask_and_image(image_path, mask_path, output_dir)
+generate_patches_from_mask_and_image(image_name, mask_name, output_dir)
