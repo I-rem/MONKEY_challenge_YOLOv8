@@ -74,10 +74,12 @@ def create_combined_xml(tiff_name, patch_data, output_file):
     annotations = SubElement(root, "Annotations")
 
     # Add all patches and their centers as annotations
+
     for patch_index, (patch_coords, patch_name) in enumerate(patch_data.items()):
         # Add Center annotation
         center_x = (patch_coords[0][0] + patch_coords[1][0]) / 2
         center_y = (patch_coords[0][1] + patch_coords[1][1]) / 2
+
         annotation = SubElement(annotations, "Annotation", {
             "Name": f"Center_{patch_index}",
             "Type": "Dot",
@@ -95,6 +97,7 @@ def create_combined_xml(tiff_name, patch_data, output_file):
             "Color": "255, 0, 0"
         })
         coords = SubElement(annotation, "Coordinates")
+
         for i, (x, y) in enumerate([patch_coords[0], (patch_coords[0][0], patch_coords[1][1]),
                                     patch_coords[1], (patch_coords[1][0], patch_coords[0][1])]):
             SubElement(coords, "Coordinate", {"Order": str(i), "X": str(x), "Y": str(y)})
@@ -104,10 +107,12 @@ def create_combined_xml(tiff_name, patch_data, output_file):
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Combined XML saved to {output_file}")
 
+
 # Example usage
 image_path = r'/input/images/kidney-transplant-biopsy-wsi-pas/.' 
 image_name = "/input/images/kidney-transplant-biopsy-wsi-pas/" + os.listdir(image_path)[0]
 mask_path = r'/input/images/tissue-mask/.' 
+
 mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
 output_dir = "./Patches"
 
