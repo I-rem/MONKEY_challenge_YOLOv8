@@ -5,6 +5,9 @@ from shapely.geometry import Polygon, Point
 from ultralytics import YOLO
 import rasterio
 import numpy as np
+import warnings
+
+warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 
 CLASSES = ["lymphocytes", "monocytes"]
@@ -88,8 +91,8 @@ model = YOLO('./best.pt')
 
 image_directory = "./Patches"
 xml_directory = "./Patches"
-mask_path = r'./input/images/tissue-mask/.'
-mask_name = "./input/images/tissue-mask/" + os.listdir(mask_path)[0]
+mask_path = r'/input/images/tissue-mask/.'
+mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
 
 
 with rasterio.open(mask_name) as src:
