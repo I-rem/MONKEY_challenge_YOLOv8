@@ -47,37 +47,32 @@ def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patc
     patch_index = 0
     patch_data = {}
 
-    # Open the TIFF files
+
     with TiffFile(image_path) as tif_image, TiffFile(mask_path) as tif_mask:
-        image_reader = tif_image.pages[0]  # Reader for image
-        mask_reader = tif_mask.pages[0]  # Reader for mask
+        image_reader = tif_image.pages[0] 
+        mask_reader = tif_mask.pages[0]  
 
         y = 0
         while True:
             x = 0
            
-            row_empty = True  # Track if the entire row is empty
+            row_empty = True  
             while True:
-                # Attempt to read a patch
                 row_slice = slice(y, y + patch_size)
                 col_slice = slice(x, x + patch_size)
                 print(f"{x} {y}")
                 try:
-                    # Read the mask patch
                     mask_patch = mask_reader.asarray()[row_slice, col_slice]
 
-                    if np.any(mask_patch):  # Non-empty patch found
+                    if np.any(mask_patch):  
                         row_empty = False
 
-                        # Read the corresponding image patch
                         image_patch = image_reader.asarray()[row_slice, col_slice]
 
-                        # Save the image patch
                         patch_name = f"{os.path.splitext(os.path.basename(image_path))[0][:10]}_patch_{patch_index}"
                         patch_output_path = os.path.join(output_dir, f"{patch_name}.png")
                         imwrite(patch_output_path, image_patch)
 
-                        # Store patch data for XML
                         patch_coords = [
                             (x, y),
                             (x + patch_size, y),
@@ -88,18 +83,15 @@ def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patc
 
                         patch_index += 1
 
-                    # Move to the next column
                     x += patch_size
 
                 except IndexError:
                     # Break when reaching the end of the row
                     break
 
-            # If the entire row was empty and no patches were read, we are at the end
             if row_empty:
                 break
 
-            # Move to the next row
             y += patch_size
 
    
