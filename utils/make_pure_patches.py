@@ -14,7 +14,7 @@ def create_combined_xml(tiff_name, patch_data, output_file):
     for patch_index, (patch_name, patch_coords) in enumerate(patch_data.items()):
         # Add Center annotation
         center_x = (patch_coords[0][0] + patch_coords[2][0]) / 2
-	@@ -40,67 +40,62 @@ def create_combined_xml(tiff_name, patch_data, output_file):
+
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Combined XML saved to {output_file}")
 
