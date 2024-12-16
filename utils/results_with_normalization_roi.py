@@ -3,12 +3,11 @@ import os
 import xml.etree.ElementTree as ET
 from shapely.geometry import Polygon, Point
 from ultralytics import YOLO
-import rasterio
+import zarr
 import numpy as np
 import warnings
 
-warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
-
+warnings.filterwarnings("ignore")
 
 CLASSES = ["lymphocytes", "monocytes"]
 
@@ -66,13 +65,13 @@ def detections_to_json(detections, class_name, output_file):
     print(f"JSON saved to {output_file}")
 
 
-def is_point_in_mask(x, y, mask_data):
+def is_point_in_mask(x, y, mask_zarr):
     """
-    Simple check if the point lies within the bounds of the binary mask.
+    Simple check if the point lies within the bounds of the binary mask Zarr data.
     Args:
         x (float): X coordinate.
         y (float): Y coordinate.
-        mask_data (ndarray): 2D numpy array representing the binary mask.
+        mask_zarr (zarr.Array): Zarr array representing the binary mask.
 
     Returns:
         bool: True if the detection point is in the ROI defined by mask_data.
@@ -81,23 +80,17 @@ def is_point_in_mask(x, y, mask_data):
     row, col = int(round(y)), int(round(x))
 
     # Ensure indices are within bounds
-    if 0 <= row < mask_data.shape[0] and 0 <= col < mask_data.shape[1]:
-        return mask_data[row, col] > 0  # Check if the point is part of the ROI
+    if 0 <= row < mask_zarr.shape[0] and 0 <= col < mask_zarr.shape[1]:
+        return mask_zarr[row, col] > 0  # Check if the point is part of the ROI
     return False
 
-
+mask_zarr_path = "./zarr/large_mask.zarr"
+mask_zarr = zarr.open(mask_zarr_path, mode="r")
 
 model = YOLO('./best.pt')
 
 image_directory = "./Patches"
 xml_directory = "./Patches"
-mask_path = r'/input/images/tissue-mask/.'
-mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
-
-
-with rasterio.open(mask_name) as src:
-    mask_data = src.read(1)  # Load the first band from the mask.tif
-    transform = src.transform  # Extract spatial transform for mapping coordinates
 
 # Parse all XML files to build ROI and patch metadata
 rois_by_base_name = {}
@@ -119,17 +112,14 @@ for result in results:
     patch_name = os.path.splitext(os.path.basename(result.path))[0]
     print(f"Processing image: {patch_name}")
     
-    # Extract base name without suffix
     base_name = "_".join(patch_name.split("_")[:-1])
     if base_name not in patch_to_offset or base_name not in rois_by_base_name:
         print(f"Warning: No metadata found for {patch_name}")
         continue
 
-    # Get ROI polygons and patch offsets
     rois = rois_by_base_name[base_name]
     patches = patch_to_offset[base_name]
 
-    # Get patch offset
     patch_index = int(patch_name.split("_")[-1])
     patch_key = f"Patch_{patch_index}"
     if patch_key not in patches:
@@ -137,7 +127,6 @@ for result in results:
         continue
     x_offset, y_offset = patches[patch_key]
 
-    # Process detections
     boxes = result.boxes
     for box in boxes:
         # Map detection coordinates with offsets
@@ -146,13 +135,12 @@ for result in results:
         conf = float(box.conf[0].item())
         cls = int(box.cls[0].item())
 
-        # Check against the mask
-        if is_point_in_mask(x_center, y_center, mask_data):
+        # Check against the Zarr mask
+        if is_point_in_mask(x_center, y_center, mask_zarr):
             class_name = CLASSES[cls]
             detections_by_class[class_name].append((x_center, y_center, conf))
             inflammatory_detections.append((x_center, y_center, conf))
 
-# Save results as JSON
 for class_name, detections in detections_by_class.items():
     output_file = f"detected-{class_name.replace('_', '-')}.json"
     detections_to_json(detections, class_name, output_file)
