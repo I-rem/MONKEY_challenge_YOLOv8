@@ -6,74 +6,121 @@ import xml.etree.ElementTree as ET
 
 def create_combined_xml(tiff_name, patch_data, output_file):
     """
-    Creates a single XML file containing information for all patches and their centers.
+    Creates a single XML file containing information for all patches, their centers, and ROI polygons.
     """
     root = ET.Element("ASAP_Annotations")
     annotations = ET.SubElement(root, "Annotations")
 
     for patch_index, (patch_name, patch_coords) in enumerate(patch_data.items()):
-        # Add Center annotation
         center_x = (patch_coords[0][0] + patch_coords[2][0]) / 2
-	@@ -40,67 +40,62 @@ def create_combined_xml(tiff_name, patch_data, output_file):
-    tree.write(output_file, encoding="utf-8", xml_declaration=True)
-    print(f"Combined XML saved to {output_file}")
+        center_y = (patch_coords[0][1] + patch_coords[2][1]) / 2
+        annotation = ET.SubElement(annotations, "Annotation", {
+            "Name": f"Center_{patch_index}",
+            "Type": "Dot",
+            "PartOfGroup": "None",
+            "Color": "255, 0, 0"
+        })
+        coords = ET.SubElement(annotation, "Coordinates")
+        ET.SubElement(coords, "Coordinate", {"X": str(center_x), "Y": str(center_y)})
+
+        annotation = ET.SubElement(annotations, "Annotation", {
+            "Name": f"Patch_{patch_index}",
+            "Type": "Rectangle",
+            "PartOfGroup": "None",
+            "Color": "255, 0, 0"
+        })
+        coords = ET.SubElement(annotation, "Coordinates")
+        for i, (x, y) in enumerate(patch_coords):
+            ET.SubElement(coords, "Coordinate", {"Order": str(i), "X": str(x), "Y": str(y)})
+
+
+
 
 
 def generate_patches_from_mask_and_image(image_path, mask_path, output_dir, patch_size=1024):
+    """
+    Generates patches from a large image and mask. Saves non-empty image patches to output_dir and 
+    creates a combined XML file with patch metadata.
+    """
     os.makedirs(output_dir, exist_ok=True)
+
+    patch_index = 0
+    patch_data = {}
 
     # Open the TIFF files
     with TiffFile(image_path) as tif_image, TiffFile(mask_path) as tif_mask:
-        # Get the TIFF pages for memory-efficient access
-        image_page = tif_image.pages[0]
-        mask_page = tif_mask.pages[0]
+        image_reader = tif_image.pages[0]  # Reader for image
+        mask_reader = tif_mask.pages[0]  # Reader for mask
 
-        image_shape = image_page.shape
-        mask_shape = mask_page.shape
+        y = 0
+        while True:
+            x = 0
+           
+            row_empty = True  # Track if the entire row is empty
+            while True:
+                # Attempt to read a patch
+                row_slice = slice(y, y + patch_size)
+                col_slice = slice(x, x + patch_size)
+                print(f"{x} {y}")
+                try:
+                    # Read the mask patch
+                    mask_patch = mask_reader.asarray()[row_slice, col_slice]
 
-        print(f"Processing {image_path} with {mask_path}")
-        print(f"Image shape: {image_shape}, Mask shape: {mask_shape}")
+                    if np.any(mask_patch):  # Non-empty patch found
+                        row_empty = False
 
-        patch_index = 0
-        patch_data = {}
+                        # Read the corresponding image patch
+                        image_patch = image_reader.asarray()[row_slice, col_slice]
 
-        # Iterate over the mask in chunks to extract patches
-        for y in range(0, mask_shape[0], patch_size):
-            for x in range(0, mask_shape[1], patch_size):
-                # Extract the patch from the mask
-                mask_patch = mask_page.asarray()[y:y + patch_size, x:x + patch_size]
-                if np.any(mask_patch):  # Process only non-empty patches
-                    # Extract the corresponding image patch
-                    image_patch = image_page.asarray()[y:y + patch_size, x:x + patch_size]
+                        # Save the image patch
+                        patch_name = f"{os.path.splitext(os.path.basename(image_path))[0][:10]}_patch_{patch_index}"
+                        patch_output_path = os.path.join(output_dir, f"{patch_name}.png")
+                        imwrite(patch_output_path, image_patch)
 
-                    # Save the patch
-                    patch_name = f"{os.path.splitext(os.path.basename(image_path))[0][0:10]}_patch_{patch_index}"
-                    patch_output_path = os.path.join(output_dir, f"{patch_name}.png")
-                    imwrite(patch_output_path, image_patch)
+                        # Store patch data for XML
+                        patch_coords = [
+                            (x, y),
+                            (x + patch_size, y),
+                            (x + patch_size, y + patch_size),
+                            (x, y + patch_size),
+                        ]
+                        patch_data[patch_name] = patch_coords
 
-                    # Store patch data for XML
-                    patch_coords = [
-                        (x, y),
-                        (x + patch_size, y),
-                        (x + patch_size, y + patch_size),
-                        (x, y + patch_size),
-                    ]
-                    patch_data[patch_name] = patch_coords
+                        patch_index += 1
 
-                    patch_index += 1
+                    # Move to the next column
+                    x += patch_size
 
-        # Save combined XML
-        xml_output_path = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_path))[0]}_annotations.xml")
-        create_combined_xml(image_path, patch_data, xml_output_path)
+                except IndexError:
+                    # Break when reaching the end of the row
+                    break
+
+            # If the entire row was empty and no patches were read, we are at the end
+            if row_empty:
+                break
+
+            # Move to the next row
+            y += patch_size
+
+   
+
+    # Create a single combined XML for this TIFF
+    xml_output_path = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_path))[0][0:10]}inflammatory-cells.xml")
+    #create_combined_xml(image_path, patch_data, roi_coordinates, xml_output_path)
+    create_combined_xml(image_path, patch_data, xml_output_path)
+
+    #print(f"Patches and XML annotations saved in {output_dir}")
+
 
 
 # Example usage
-image_path = r'/input/images/kidney-transplant-biopsy-wsi-pas/.' 
-image_name = "/input/images/kidney-transplant-biopsy-wsi-pas/" + os.listdir(image_path)[0]
-mask_path = r'/input/images/tissue-mask/.' 
+#image_path = r'/input/images/kidney-transplant-biopsy-wsi-pas/.' 
+#image_name = "/input/images/kidney-transplant-biopsy-wsi-pas/" + os.listdir(image_path)[0]
+#mask_path = r'/input/images/tissue-mask/.' 
 
-mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
+#mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
 output_dir = "./Patches"
 
 # Generate patches
-generate_patches_from_mask_and_image(image_name, mask_name, output_dir)
+#generate_patches_from_mask_and_image(image_name, mask_name, output_dir)
+generate_patches_from_mask_and_image("A_P000001_PAS_CPG.tif", "A_P000001_mask.tif", output_dir)
