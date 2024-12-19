@@ -2,7 +2,7 @@ import json
 import os
 
 # Conversion factor: 0.24 µm per pixel, converted to mm
-PIXEL_TO_MM = 0.00024
+PIXEL_TO_MM = 0.00024199951445730394
 
 def convert_json_to_mm(json_file, output_file=None):
     # Read the JSON file
