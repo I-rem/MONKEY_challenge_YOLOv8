@@ -20,14 +20,14 @@ def extract_roi_patches(image_path, mask_path, patch_size=(256, 256), output_dir
         os.makedirs(output_dir, exist_ok=True)
 
         # Memory map the image and mask (so they don't load completely into memory)
-        image = image_series.asarray()  # This is done lazily
-        mask = mask_series.asarray()  # This is done lazily
+        image = image_series.asarray(out='memmap')  # This is done lazily
+        mask = mask_series.asarray(out='memmap')  # This is done lazily
 
         # Generate ROI indices (non-zero values in the mask)
         roi_indices = np.argwhere(mask > 0)  # Find non-zero mask values (ROI)
 
         # Define patch stride (step size)
-        stride = patch_size[0] // 2  # Adjust stride to control overlap, e.g., 50% overlap
+        stride = patch_size[0]  # Adjust stride to control overlap, e.g., no overlap
 
         patch_data = {}  # To store patch info for XML later
         processed_patches = set()  # To track processed patches (coordinates as tuples)
