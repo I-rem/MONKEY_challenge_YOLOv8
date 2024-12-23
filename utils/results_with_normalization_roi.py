@@ -87,7 +87,7 @@ def is_point_in_mask(x, y, mask_data):
 model = YOLO('./best.pt')
 
 image_directory = "./Patches"
-xml_directory = "./Patches"
+xml_directory = "."
 mask_path = r'/input/images/tissue-mask/.'
 mask_name = "/input/images/tissue-mask/" + os.listdir(mask_path)[0]
 
