@@ -5,7 +5,8 @@ from shapely.geometry import Polygon, Point
 from ultralytics import YOLO
 import rasterio
 import numpy as np
-
+import warnings
+warnings.filterwarnings('ignore', category=rasterio.errors.NotGeoreferencedWarning)
 
 CLASSES = ["lymphocytes", "monocytes"]
 
