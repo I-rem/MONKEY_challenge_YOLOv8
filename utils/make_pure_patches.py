@@ -5,6 +5,7 @@ from tifffile import imwrite
 import concurrent.futures
 import xml.etree.ElementTree as ET
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
 
 def extract_roi_patches(image_path, mask_path, patch_size=(1024, 1024), output_dir='patches', label='inflammatory-cells'):
     os.makedirs(output_dir, exist_ok=True)
