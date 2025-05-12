@@ -4,70 +4,38 @@ import tifffile
 from tifffile import imwrite
 import concurrent.futures
 import xml.etree.ElementTree as ET
+from PIL import Image
 
-def extract_roi_patches(image_path, mask_path, patch_size=(256, 256), output_dir='./Patches', label='inflammatory-cells'):
-    import math
+def extract_roi_patches(image_path, mask_path, patch_size=(1024, 1024), output_dir='patches', label='inflammatory-cells'):
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Open the image and the mask using tifffile with memory mapping (lazy loading)
-    with tifffile.TiffFile(image_path) as img_tif, tifffile.TiffFile(mask_path) as mask_tif:
-        image_series = img_tif.series[0]
-        mask_series = mask_tif.series[0]
+    # Load image and mask
+    image = Image.open(image_path)
+    mask = Image.open(mask_path)
 
-        image_shape = image_series.shape
-        mask_shape = mask_series.shape
+    # Convert to numpy arrays
+    image_np = np.array(image)
+    mask_np = np.array(mask)
 
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
+    h, w = mask_np.shape[:2]
+    ph, pw = patch_size
 
-        # Memory map the image and mask (so they don't load completely into memory)
-        image = image_series.asarray(out='memmap')  # This is done lazily
-        mask = mask_series.asarray(out='memmap')  # This is done lazily
+    patch_id = 0
+    saved_patches = []
 
-        # Generate ROI indices (non-zero values in the mask)
-        roi_indices = np.argwhere(mask > 0)  # Find non-zero mask values (ROI)
+    for y in range(0, h - ph + 1, ph):
+        for x in range(0, w - pw + 1, pw):
+            mask_patch = mask_np[y:y+ph, x:x+pw]
+            if np.any(mask_patch > 0):
+                img_patch = image_np[y:y+ph, x:x+pw]
+                patch_filename = f"{os.path.splitext(os.path.basename(image_path))[0]}_{label}_{patch_id}.png"
+                Image.fromarray(img_patch).save(os.path.join(output_dir, patch_filename))
+                saved_patches.append(patch_filename)
+                patch_id += 1
 
-        # Define patch stride (step size)
-        stride = patch_size[0]  # Adjust stride to control overlap, e.g., no overlap
-
-        patch_data = {}  # To store patch info for XML later
-        processed_patches = set()  # To track processed patches (coordinates as tuples)
-
-        patch_index = 0  # Start with index 0 for patch naming
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = []
-
-            for y, x in roi_indices:
-                # Align patch center to the stride grid
-                y_start = math.floor(y / stride) * stride
-                x_start = math.floor(x / stride) * stride
-                y_end = y_start + patch_size[0]
-                x_end = x_start + patch_size[1]
-
-                # Ensure the patch is within the bounds of the image
-                if y_end > image_shape[0] or x_end > image_shape[1]:
-                    continue  # Skip patches that would exceed image boundaries
-
-                # Define unique patch coordinates
-                patch_coords = (y_start, x_start, y_end, x_end)
-
-                # Check if the patch coordinates have already been processed
-                if patch_coords not in processed_patches:
-                    processed_patches.add(patch_coords)
-                    patch_name = f"{os.path.basename(image_path)[:10]}{label}_{patch_index}.png"  # Custom patch naming format
-                    futures.append(executor.submit(save_patch, image, y_start, x_start, y_end, x_end, patch_name))
-                    patch_data[patch_name] = patch_coords
-                    patch_index += 1  # Increment the patch index for each patch
-
-            # Wait for all patches to be saved
-            for future in futures:
-                future.result()
-
-    return patch_data
-
-# Save patch function remains unchanged
-
-
-
+    print(f"Saved {len(saved_patches)} patches to {output_dir}")
+    return saved_patches
+    
 # Function to save a patch
 def save_patch(image, y_start, x_start, y_end, x_end, patch_name, output_dir='./Patches'):
     patch = image[y_start:y_end, x_start:x_end]
