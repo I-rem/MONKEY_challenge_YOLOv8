@@ -68,6 +68,7 @@ RUN /venv/bin/python3.8 -m pip install ultralytics
 # Ensure Python output is not buffered
 ENV PYTHONUNBUFFERED=1
 ENV YOLO_CONFIG_DIR=/opt/app/.ultralytics_config
+RUN mkdir -p /opt/app/.ultralytics_config && chown -R user:user /opt/app/.ultralytics_config
 
 # Set entrypoint to execute main.py
 ENTRYPOINT ["/venv/bin/python3.8", "main.py"]
