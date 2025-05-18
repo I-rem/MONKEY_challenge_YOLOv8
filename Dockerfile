@@ -56,7 +56,7 @@ COPY --chown=user:user best.pt /opt/app/
 RUN /venv/bin/python3.8 -m pip install --no-cache-dir -r /opt/app/requirements.txt
 
 # Install PyTorch
-RUN /venv/bin/python3.8 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+RUN /venv/bin/python3.8 -m pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu116
 # RUN /venv/bin/python3.8 -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
 
 # Install YOLOv8
