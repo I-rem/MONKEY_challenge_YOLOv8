@@ -84,7 +84,7 @@ mask_path = os.path.join(mask_name, os.listdir(mask_name)[0])
 output_dir = './Patches'
 
 # Extract patches based on ROI (mask)
-patch_data = extract_roi_patches(image_path, mask_path, patch_size=(1024, 1024), output_dir=output_dir, label='inflammatory-cells')
+patch_data = extract_roi_patches(image_path, mask_path, patch_size=(512, 512), output_dir=output_dir, label='inflammatory-cells')
 
 
 # Function to generate XML file for annotations
