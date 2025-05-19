@@ -51,6 +51,7 @@ COPY --chown=user:user utils /opt/app/utils
 COPY --chown=user:user requirements.txt /opt/app/
 COPY --chown=user:user best.pt /opt/app/
 # COPY --chown=user:user Patches /opt/app/Patches
+COPY --chown=user:user generate_dummy_eval.py /opt/app/
 
 # Install Python dependencies from requirements.txt
 RUN /venv/bin/python3.8 -m pip install --no-cache-dir -r /opt/app/requirements.txt
@@ -71,4 +72,5 @@ ENV YOLO_CONFIG_DIR=/opt/app/.ultralytics_config
 RUN mkdir -p /opt/app/.ultralytics_config && chown -R user:user /opt/app/.ultralytics_config
 
 # Set entrypoint to execute main.py
+RUN /venv/bin/python3.8 generate_dummy_eval.py
 ENTRYPOINT ["/venv/bin/python3.8", "main.py"]
